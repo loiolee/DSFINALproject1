@@ -1,0 +1,105 @@
+### 问卷系统接口测试（IntelliJ IDEA HTTP Client 或 VS Code REST Client 可直接运行）
+### 基础地址：http://localhost:8081
+
+### 1. 注册（首次运行先执行；用户名已存在会返回 409，换一个或直接登录）
+POST http://localhost:8081/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "lee",
+  "password": "pass1234"
+}
+
+### 2. 登录（把返回的 token 填到下面的 @token）
+POST http://localhost:8081/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "lee",
+  "password": "pass1234"
+}
+
+> {% client.global.set("token", response.body.data.token); %}
+
+### 3. 创建问卷（携带 Token，草稿含 4 种题型与跳转规则）
+POST http://localhost:8081/api/surveys
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "编程课程满意度调查",
+  "description": "匿名问卷示例",
+  "anonymous": true,
+  "allowMultiple": false,
+  "questions": [
+    {
+      "type": "single",
+      "title": "你是否完成过至少一个编程项目？",
+      "required": true,
+      "options": [
+        { "label": "是" },
+        { "label": "否" }
+      ],
+      "jumps": [
+        { "op": "eq", "optionId": "OPT_NO_PLACEHOLDER", "targetQuestionId": "END" }
+      ]
+    },
+    {
+      "type": "multiple",
+      "title": "你使用过哪些语言？（可多选）",
+      "required": true,
+      "constraints": { "minSelect": 1, "maxSelect": 4 },
+      "options": [
+        { "label": "Java" },
+        { "label": "Python" },
+        { "label": "JavaScript" },
+        { "label": "C/C++" }
+      ]
+    },
+    {
+      "type": "number",
+      "title": "你平均每周编程多少小时？",
+      "required": false,
+      "constraints": { "minValue": 0, "maxValue": 100, "isInteger": true }
+    },
+    {
+      "type": "text",
+      "title": "你想对课程说的话",
+      "required": false,
+      "constraints": { "maxLength": 200 }
+    }
+  ]
+}
+
+### 4. 我的问卷列表
+GET http://localhost:8081/api/surveys/mine
+Authorization: Bearer {{token}}
+
+### 5. 发布问卷（把 {surveyId} 换成第 3 步返回的 id；发布后 data.publicId 用于答题）
+POST http://localhost:8081/api/surveys/{surveyId}/publish
+Authorization: Bearer {{token}}
+
+### 6. 开始答卷（把 {publicId} 换成发布返回的 publicId）
+POST http://localhost:8081/api/surveys/{publicId}/start
+Authorization: Bearer {{token}}
+
+### 7. 提交单题答案（把 {responseId} 换成第 6 步返回的 responseId；answer 按当前题目类型给值）
+POST http://localhost:8081/api/responses/{responseId}/answer
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "questionId": "REPLACE_WITH_CURRENT_QUESTION_ID",
+  "answer": "REPLACE_WITH_OPTION_ID_OR_VALUE"
+}
+
+### 8. 最终交卷
+POST http://localhost:8081/api/responses/{responseId}/submit
+Authorization: Bearer {{token}}
+
+### 9. 整卷统计
+GET http://localhost:8081/api/surveys/{surveyId}/stats
+Authorization: Bearer {{token}}
+
+### 10. 未带 Token 访问受保护接口（预期 401，用于验证拦截器）
+GET http://localhost:8081/api/surveys/mine
