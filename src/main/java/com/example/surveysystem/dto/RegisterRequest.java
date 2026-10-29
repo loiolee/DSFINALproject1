@@ -12,7 +12,13 @@ public class RegisterRequest {
     @Pattern(regexp = "[A-Za-z0-9_.-]+", message = "用户名仅允许字母、数字、下划线、点和连字符")
     private String username;
 
+    /**
+     * 注册密码：8–16 位。
+     *
+     * <p>上限只作用于注册，不作用于登录：第一阶段允许 8–72 位，已有账号里可能存在超过 16 位的密码，
+     * 若在 {@link LoginRequest} 上同样加上限，这些账号会直接无法登录。登录侧只校验非空。</p>
+     */
     @NotBlank(message = "密码不能为空")
-    @Size(min = 8, max = 72, message = "密码长度必须为 8-72 个字符")
+    @Size(min = 8, max = 16, message = "密码长度必须为 8-16 个字符")
     private String password;
 }

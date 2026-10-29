@@ -1,5 +1,8 @@
 /*
- * 为三个集合建立 JSON Schema 校验器（集合级数据契约）。
+ * 为六个集合建立 JSON Schema 校验器（集合级数据契约）。
+ * 第二阶段新增 questions / question_versions / question_shares 三个集合，
+ * 同时给 surveys.questions[] 与 responses.answers[] 增加了可选的题库引用字段。
+ * 新增字段一律可选，因此第一阶段的存量文档仍然满足校验器。
  *
  * 为什么单独成脚本而不写在应用启动流程里：
  *   应用运行账号只需要 readWrite 权限；collMod 属于 schema 变更，需要 dbAdmin。
@@ -67,7 +70,12 @@ const questionSchema = {
     required: { bsonType: "bool" },
     options: { bsonType: "array", items: optionSchema },
     constraints: { bsonType: ["object", "null"] },
-    jumps: { bsonType: "array", items: jumpSchema }
+    jumps: { bsonType: "array", items: jumpSchema },
+    // 第二阶段：题库引用。本地题目这三个字段为 null（或不存在），存量文档不受影响。
+    questionId: { bsonType: ["string", "null"] },
+    questionVersionId: { bsonType: ["string", "null"] },
+    versionNo: { bsonType: ["int", "long", "null"] },
+    sourceType: { enum: ["local", "library"] }
   }
 };
 
@@ -95,6 +103,9 @@ const answerSchema = {
   required: ["questionId", "type", "answeredAt"],
   properties: {
     questionId: { bsonType: "string" },
+    // 第二阶段：题库归属与版本。本地题目与第一阶段的历史答卷为 null。
+    libraryQuestionId: { bsonType: ["string", "null"] },
+    questionVersionId: { bsonType: ["string", "null"] },
     type: { enum: ["single", "multiple", "text", "number"] },
     optionIds: { bsonType: "array", items: { bsonType: "string" } },
     textValue: { bsonType: ["string", "null"] },
@@ -124,10 +135,72 @@ const responseSchema = {
   }
 };
 
+/* ==================== 第二阶段新增集合 ==================== */
+
+const libraryQuestionSchema = {
+  bsonType: "object",
+  description: "题库题目身份：内容在 question_versions，这里只保存身份与当前版本指针",
+  required: ["ownerId", "title", "type", "currentVersionId", "currentVersionNo", "visibility", "status", "createdAt", "updatedAt"],
+  properties: {
+    ownerId: { bsonType: "string" },
+    // 当前版本的题干与题型冗余保存，供题库列表直接展示与筛选
+    title: { bsonType: "string", minLength: 1, maxLength: 1000 },
+    type: { enum: ["single", "multiple", "text", "number"] },
+    currentVersionId: { bsonType: "string" },
+    currentVersionNo: { bsonType: ["int", "long"] },
+    visibility: { enum: ["private", "shared"] },
+    // 归档而非删除：历史问卷与已发出的共享仍然有效
+    status: { enum: ["active", "archived"] },
+    // 仅「从问卷加入题库」的题目才有来源；与 ownerId 一起构成幂等键（见 uniq_question_source）
+    sourceSurveyId: { bsonType: ["string", "null"] },
+    sourceQuestionInstanceId: { bsonType: ["string", "null"] },
+    createdAt: { bsonType: "date" },
+    updatedAt: { bsonType: "date" }
+  }
+};
+
+const questionVersionSchema = {
+  bsonType: "object",
+  description: "题目版本：写入后不可修改，问卷快照从这里复制；不含 jumps 与 order",
+  required: ["questionId", "versionNo", "type", "title", "required", "options", "createdBy", "createdAt"],
+  properties: {
+    questionId: { bsonType: "string" },
+    versionNo: { bsonType: ["int", "long"], minimum: 1 },
+    // v1 为 null，其余指向上一版本，用于还原「这个题是从哪个版本改过来的」
+    parentVersionId: { bsonType: ["string", "null"] },
+    // 仅「恢复旧版本」产生的版本才有值
+    restoredFromVersionId: { bsonType: ["string", "null"] },
+    type: { enum: ["single", "multiple", "text", "number"] },
+    title: { bsonType: "string", minLength: 1, maxLength: 1000 },
+    required: { bsonType: "bool" },
+    options: { bsonType: "array", items: optionSchema },
+    constraints: { bsonType: ["object", "null"] },
+    changeNote: { bsonType: ["string", "null"], maxLength: 1000 },
+    createdBy: { bsonType: "string" },
+    createdAt: { bsonType: "date" }
+  }
+};
+
+const questionShareSchema = {
+  bsonType: "object",
+  description: "题目共享授权：授权者把某道题的使用权限授予另一个用户",
+  required: ["questionId", "ownerId", "granteeId", "permission", "createdAt"],
+  properties: {
+    questionId: { bsonType: "string" },
+    ownerId: { bsonType: "string" },
+    granteeId: { bsonType: "string" },
+    permission: { enum: ["use", "edit"] },
+    createdAt: { bsonType: "date" }
+  }
+};
+
 const targets = [
   { collection: "users", schema: userSchema },
   { collection: "surveys", schema: surveySchema },
-  { collection: "responses", schema: responseSchema }
+  { collection: "responses", schema: responseSchema },
+  { collection: "questions", schema: libraryQuestionSchema },
+  { collection: "question_versions", schema: questionVersionSchema },
+  { collection: "question_shares", schema: questionShareSchema }
 ];
 
 /* ==================== 只读预检 ==================== */

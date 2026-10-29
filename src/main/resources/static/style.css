@@ -210,3 +210,59 @@ code.inline { background: var(--bg); border: 1px solid var(--ink); border-radius
   background: var(--white); border: 2px solid var(--ink); border-radius: 6px;
   padding: 1px 6px; font-size: 12px; font-family: ui-monospace, Consolas, monospace;
 }
+
+/* ===== 第二阶段：题库 ===== */
+.badge.warn { background: var(--orange); color: var(--white); }
+
+.lib-card { display: flex; flex-direction: column; gap: 10px; }
+
+/* 引用题库题目的卡片：内容只读，只有必答性与跳转规则可改。
+   选择器必须写成 .question-editor.ref-card：配色类 .question-editor.c0~c4 也是两个类，
+   只写 .ref-card 会被同权重但更靠前的配色规则盖掉，只读底色根本显示不出来。 */
+.question-editor.ref-card { background: #E5EEFF; }
+.q-title-static {
+  flex: 3; font-weight: 800; font-size: 16px; line-height: 1.5;
+  padding: 8px 10px; background: var(--white); border: 2px dashed var(--ink); border-radius: 10px;
+}
+.ref-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; margin-bottom: 8px; }
+.ref-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.opt-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--white); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 3px 12px; font-size: 13px; font-weight: 700;
+}
+.opt-chip code { font-size: 11px; opacity: .7; font-family: ui-monospace, Consolas, monospace; }
+.ref-note { font-size: 12px; opacity: .7; margin-bottom: 10px; line-height: 1.6; }
+
+/* 从题库选题面板 */
+.picker-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.picker-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  border: var(--border); border-radius: 12px; padding: 12px 14px; background: var(--white);
+}
+.picker-item .survey-title { font-size: 16px; }
+
+/* ===== 第二阶段：题目详情 ===== */
+.version-item {
+  border: var(--border); border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 12px; background: var(--white);
+}
+.version-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.version-title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+.version-note { font-size: 13px; opacity: .8; margin-bottom: 8px; }
+.version-content { display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.7; }
+.version-content b { font-weight: 800; }
+
+.diff-box { display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.8; }
+.diff-summary { font-weight: 800; color: var(--blue); }
+
+.stat-version {
+  border: var(--border); border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 12px; background: var(--white);
+}
+.stat-version .bar-count { flex: 0 0 90px; }
+
+.hint-warn {
+  background: var(--yellow); border: var(--border); border-radius: 12px;
+  padding: 10px 14px; font-size: 13px; font-weight: 700; margin-bottom: 12px;
+}

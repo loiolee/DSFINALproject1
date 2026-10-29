@@ -58,7 +58,18 @@ public class Response {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Answer {
+        /** 问卷内题目实例 ID，语义与第一阶段一致，历史答卷靠它关联。 */
         private String questionId;
+        /**
+         * 题库题目身份；本地题目为 null。
+         * 跨问卷统计按它归并「同一道题在不同问卷里的回答」。
+         */
+        private String libraryQuestionId;
+        /**
+         * 绑定的题库版本；本地题目为 null。
+         * 单题统计按它区分口径：v1 与 v2 的选项可能不同，不能混在一起算比例。
+         */
+        private String questionVersionId;
         private String type;
         @Builder.Default
         private List<String> optionIds = new ArrayList<>();

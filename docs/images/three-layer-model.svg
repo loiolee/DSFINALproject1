@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 425" width="100%" role="img">
+  <title>三层题目模型</title>
+  <desc>questions 身份层指向 question_versions 版本层，版本层被 surveys.questions 实例层引用，同时 questions 通过 question_shares 共享</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#534AB7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#185FA5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#854F0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <style>
+    .t { font-family: sans-serif; font-size: 14px; fill: #26215C; }
+    .ts { font-family: sans-serif; font-size: 11.5px; fill: #3C3489; }
+    .box { rx: 10; stroke-width: 0.6; }
+    .arr { fill: none; stroke-width: 1.5; stroke-linecap: round; }
+  </style>
+
+  <!-- 身份层 -->
+  <rect x="20" y="30" width="190" height="85" class="box" fill="#EEEDFE" stroke="#534AB7"/>
+  <text x="115" y="55" text-anchor="middle" class="t" dominant-baseline="central">questions（身份层）</text>
+  <text x="115" y="76" text-anchor="middle" class="ts" dominant-baseline="central">ownerId · currentVersionId</text>
+  <text x="115" y="95" text-anchor="middle" class="ts" dominant-baseline="central">status · visibility</text>
+
+  <!-- 版本层 -->
+  <rect x="330" y="30" width="250" height="85" class="box" fill="#E6F1FB" stroke="#185FA5"/>
+  <text x="455" y="55" text-anchor="middle" class="t" dominant-baseline="central" fill="#042C53">question_versions（版本层）</text>
+  <text x="455" y="76" text-anchor="middle" class="ts" dominant-baseline="central" fill="#0C447C">append-only · versionNo 递增</text>
+  <text x="455" y="95" text-anchor="middle" class="ts" dominant-baseline="central" fill="#0C447C">title · type · options · constraints</text>
+
+  <!-- 共享授权 -->
+  <rect x="20" y="165" width="190" height="80" class="box" fill="#FAEEDA" stroke="#854F0B"/>
+  <text x="115" y="188" text-anchor="middle" class="t" dominant-baseline="central" fill="#412402">question_shares</text>
+  <text x="115" y="209" text-anchor="middle" class="ts" dominant-baseline="central" fill="#633806">granteeId · permission</text>
+  <text x="115" y="228" text-anchor="middle" class="ts" dominant-baseline="central" fill="#633806">use / edit</text>
+
+  <!-- 实例层 -->
+  <rect x="95" y="290" width="390" height="85" class="box" fill="#EAF3DE" stroke="#3B6D11"/>
+  <text x="290" y="315" text-anchor="middle" class="t" dominant-baseline="central" fill="#173404">surveys.questions[]（实例层）</text>
+  <text x="290" y="336" text-anchor="middle" class="ts" dominant-baseline="central" fill="#27500A">sourceType=library · questionId · questionVersionId</text>
+  <text x="290" y="355" text-anchor="middle" class="ts" dominant-baseline="central" fill="#27500A">保存时复制版本内容作为快照</text>
+
+  <!-- 箭头：身份层 → 版本层（标签落在两框之间的空隙里） -->
+  <line x1="210" y1="72" x2="330" y2="72" class="arr" stroke="#534AB7" marker-end="url(#a)"/>
+  <text x="270" y="61" text-anchor="middle" class="ts" fill="#534AB7">currentVersionId</text>
+
+  <!-- 箭头：身份层 → 共享（竖直短箭头） -->
+  <line x1="115" y1="115" x2="115" y2="165" class="arr" stroke="#854F0B" marker-end="url(#c)" stroke-dasharray="4,3"/>
+  <text x="125" y="142" text-anchor="start" class="ts" fill="#854F0B">共享授权</text>
+
+  <!-- 箭头：版本层 → 实例层（从右侧下行，避开共享框） -->
+  <line x1="455" y1="115" x2="350" y2="290" class="arr" stroke="#185FA5" marker-end="url(#b)"/>
+  <text x="465" y="196" text-anchor="start" class="ts" fill="#185FA5">引用 + 快照</text>
+
+  <!-- 说明 -->
+  <rect x="20" y="385" width="640" height="30" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+  <text x="340" y="401" text-anchor="middle" class="ts" fill="#444441">已发布问卷绑定 v1 → 题库升到 v2 → 已发布仍用 v1（不可变）；草稿可换绑到 v2</text>
+</svg>

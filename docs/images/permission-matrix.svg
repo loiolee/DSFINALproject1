@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 272" width="100%" role="img">
+  <title>共享权限矩阵</title>
+  <desc>owner、edit、use 三种权限的可操作项对比</desc>
+  <style>
+    .t { font-family: sans-serif; font-size: 13px; fill: #2C2C2A; }
+    .th { font-family: sans-serif; font-size: 13px; fill: #2C2C2A; font-weight: 500; }
+    .tc { font-family: sans-serif; font-size: 12px; }
+    .ok { fill: #3B6D11; }
+    .no { fill: #A32D2D; }
+    .cell { stroke-width: 0.5; stroke: #B4B2A9; }
+    .head { fill: #F1EFE8; }
+    .owner { fill: #EEEDFE; }
+    .edit { fill: #E6F1FB; }
+    .use { fill: #EAF3DE; }
+  </style>
+
+  <!-- 表头 -->
+  <rect x="40" y="30" width="200" height="36" class="cell head" rx="4"/>
+  <text x="140" y="53" text-anchor="middle" class="th" dominant-baseline="central">操作</text>
+
+  <rect x="240" y="30" width="130" height="36" class="cell owner" rx="4"/>
+  <text x="305" y="53" text-anchor="middle" class="th" dominant-baseline="central">owner（创建者）</text>
+
+  <rect x="370" y="30" width="130" height="36" class="cell edit" rx="4"/>
+  <text x="435" y="53" text-anchor="middle" class="th" dominant-baseline="central">edit（可修改）</text>
+
+  <rect x="500" y="30" width="130" height="36" class="cell use" rx="4"/>
+  <text x="565" y="53" text-anchor="middle" class="th" dominant-baseline="central">use（可使用）</text>
+
+  <!-- 行1：读取题目 -->
+  <rect x="40" y="66" width="200" height="32" class="cell" fill="#fff"/>
+  <text x="50" y="82" class="t" dominant-baseline="central">读取题目内容</text>
+  <rect x="240" y="66" width="130" height="32" class="cell" fill="#fff"/><text x="305" y="82" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="370" y="66" width="130" height="32" class="cell" fill="#fff"/><text x="435" y="82" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="500" y="66" width="130" height="32" class="cell" fill="#fff"/><text x="565" y="82" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+
+  <!-- 行2：选进问卷 -->
+  <rect x="40" y="98" width="200" height="32" class="cell" fill="#fff"/>
+  <text x="50" y="114" class="t" dominant-baseline="central">选进自己的问卷</text>
+  <rect x="240" y="98" width="130" height="32" class="cell" fill="#fff"/><text x="305" y="114" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="370" y="98" width="130" height="32" class="cell" fill="#fff"/><text x="435" y="114" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="500" y="98" width="130" height="32" class="cell" fill="#fff"/><text x="565" y="114" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+
+  <!-- 行3：生成新版本 -->
+  <rect x="40" y="130" width="200" height="32" class="cell" fill="#fff"/>
+  <text x="50" y="146" class="t" dominant-baseline="central">生成新版本</text>
+  <rect x="240" y="130" width="130" height="32" class="cell" fill="#fff"/><text x="305" y="146" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="370" y="130" width="130" height="32" class="cell" fill="#fff"/><text x="435" y="146" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="500" y="130" width="130" height="32" class="cell" fill="#fff"/><text x="565" y="146" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+
+  <!-- 行4：归档 -->
+  <rect x="40" y="162" width="200" height="32" class="cell" fill="#fff"/>
+  <text x="50" y="178" class="t" dominant-baseline="central">归档题目</text>
+  <rect x="240" y="162" width="130" height="32" class="cell" fill="#fff"/><text x="305" y="178" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="370" y="162" width="130" height="32" class="cell" fill="#fff"/><text x="435" y="178" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+  <rect x="500" y="162" width="130" height="32" class="cell" fill="#fff"/><text x="565" y="178" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+
+  <!-- 行5：转授 -->
+  <rect x="40" y="194" width="200" height="32" class="cell" fill="#fff"/>
+  <text x="50" y="210" class="t" dominant-baseline="central">共享/转授给第三人</text>
+  <rect x="240" y="194" width="130" height="32" class="cell" fill="#fff"/><text x="305" y="210" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="370" y="194" width="130" height="32" class="cell" fill="#fff"/><text x="435" y="210" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+  <rect x="500" y="194" width="130" height="32" class="cell" fill="#fff"/><text x="565" y="210" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+
+  <!-- 行6：查看统计 -->
+  <rect x="40" y="226" width="200" height="32" class="cell" fill="#fff"/>
+  <text x="50" y="242" class="t" dominant-baseline="central">查看使用情况与跨问卷统计</text>
+  <rect x="240" y="226" width="130" height="32" class="cell" fill="#fff"/><text x="305" y="242" text-anchor="middle" class="tc ok" dominant-baseline="central">✓</text>
+  <rect x="370" y="226" width="130" height="32" class="cell" fill="#fff"/><text x="435" y="242" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+  <rect x="500" y="226" width="130" height="32" class="cell" fill="#fff"/><text x="565" y="242" text-anchor="middle" class="tc no" dominant-baseline="central">✗</text>
+</svg>

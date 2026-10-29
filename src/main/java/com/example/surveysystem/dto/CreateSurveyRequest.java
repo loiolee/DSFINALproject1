@@ -30,40 +30,45 @@ public class CreateSurveyRequest {
 
     @Data
     public static class QuestionInput {
-        /** 可选：如跳转规则引用该题，建议显式提供稳定 ID。 */
+        /** 可选：问卷内题目实例 ID。如跳转规则引用该题，建议显式提供稳定 ID。 */
         private String id;
         private Integer order;
-        @NotBlank(message = "题型不能为空")
+        /**
+         * 题型。本地题目必填；引用题库版本时可不传，内容以版本快照为准。
+         *
+         * <p>这里刻意不加 {@code @NotBlank}：Bean Validation 无法表达「本地题目必填、题库引用可空」
+         * 这种条件约束，加了注解就等于强迫客户端在引用题库题目时把题干和选项原样回传一遍，
+         * 与「引用即只读」的语义自相矛盾。必填性由 {@code SurveyService.mapQuestions}
+         * 在本地题目分支里校验，错误消息与注解版本一致。</p>
+         */
         private String type;
-        @NotBlank(message = "题目标题不能为空")
-        @Size(max = 1000, message = "题目标题不能超过 1000 个字符")
+        /** 题干。本地题目必填；引用题库版本时可不传。理由同上。 */
         private String title;
-        private Boolean required = true;
+        /**
+         * 本问卷内是否必答。留空时：本地题目按必答处理，题库题目取版本里的默认值。
+         * 第二阶段把默认值从 {@code true} 改为 {@code null}，是为了让「沿用版本默认值」这件事可以表达；
+         * 对本地题目的行为与第一阶段完全相同（null 视为必答）。
+         */
+        private Boolean required;
+
+        /**
+         * 可选：题库题目身份。与 questionVersionId 一起使用时用于校验一致性；
+         * 两者都为空表示这是一道本地题目。
+         */
+        private String questionId;
+        /**
+         * 可选：引用题库中的某个版本。提供该字段时，题目内容以版本快照为准，
+         * 请求体里的 type / title / options / constraints 只用于一致性校验，不会被写入。
+         */
+        private String questionVersionId;
+        /** 可选：版本号。仅作展示与校验用，实际以 questionVersionId 对应的版本为准。 */
+        private Integer versionNo;
+
         @Valid
         private List<OptionInput> options = new ArrayList<>();
         private ConstraintsInput constraints;
         @Valid
         private List<JumpInput> jumps = new ArrayList<>();
-    }
-
-    @Data
-    public static class OptionInput {
-        private String id;
-        @NotBlank(message = "选项文本不能为空")
-        @Size(max = 500, message = "选项文本不能超过 500 个字符")
-        private String label;
-        private Integer order;
-    }
-
-    @Data
-    public static class ConstraintsInput {
-        private Integer minSelect;
-        private Integer maxSelect;
-        private Integer minLength;
-        private Integer maxLength;
-        private Double minValue;
-        private Double maxValue;
-        private Boolean isInteger = false;
     }
 
     @Data

@@ -2,6 +2,58 @@
 
 Spring Boot + MongoDB 的在线问卷系统（后端 + 内置前端页面），包名 `com.example.surveysystem`，Java 21，默认端口 `8081`。
 
+| 项目 | 内容 |
+|---|---|
+| 文档版本 | **v2.0** |
+| 版本日期 | 2026-10-29 |
+| 对应阶段 | 第二阶段（需求变更） |
+| 上一版本 | v1.0（第一阶段，2026-10-22） |
+| 变更性质 | **增量**：一阶段功能、接口、页面全部保留，只新增 |
+
+## 版本记录
+
+| 版本 | 日期 | 主要变更 |
+|---|---|---|
+| v1.0 | 2026-10-22 | 初版。3 个集合、16 个接口、29 条功能、5 个页面；一阶段集成测试 12 用例 |
+| v2.0 | 2026-10-29 | 新增题库（3 个集合、17 个接口、8 条需求）；前端扩到 7 个视图；新增二阶段回归测试 5 用例；新增迁移脚本 `migrate-phase2.js`；§1~§8 全量核对更新，新增 §9 版本升级指引 |
+
+**v2.0 变更摘要（相对 v1.0）**
+
+| 维度 | v1.0 | v2.0 | 说明 |
+|---|---|---|---|
+| 集合 | 3 | 6 | +`questions` / `question_versions` / `question_shares` |
+| 索引 | 6 | 15 | +9，既有 6 条定义不变 |
+| 接口 | 16 | 33 | +17（Q-01~Q-15、SQ-01~SQ-02） |
+| 前端视图 | 5 | 7 | +题库、题目详情 |
+| 后端 Java | 45 文件 / 2312 行 | 71 文件 / 5150 行 | 新增 26 文件，未删任何一阶段类或方法 |
+| 测试用例 | 13（12+1） | 24 | +6 必测项重组、+5 二阶段回归 |
+| 数据库脚本 | 3 | 4 | +`migrate-phase2.js` |
+
+## 目录
+
+- [1. 运行指引（环境与启动）](#1-运行指引环境与启动)
+  - [1.1 环境要求与检查](#11-环境要求与检查)
+  - [1.2 首次运行三步](#12-首次运行三步)
+  - [1.3 启动：数据库未启用认证](#13-启动数据库未启用认证默认配置最快)
+  - [1.4 启动：数据库已启用认证](#14-启动数据库已启用认证)
+  - [1.5 配置项](#15-配置项)
+  - [1.6 怎么判断启动成功](#16-怎么判断启动成功)
+  - [1.7 打开页面并走一遍完整流程](#17-打开页面并走一遍完整流程5-步约-2-分钟)
+  - [1.8 打包与运行 jar](#18-打包与运行-jar)
+  - [1.9 运行测试](#19-运行测试)
+  - [1.10 可选：应用数据库层校验器](#110-可选应用数据库层校验器需要-dbadmin-权限)
+  - [1.11 常见问题](#111-常见问题)
+  - [1.12 命令行快速自测（可选）](#112-命令行快速自测可选)
+  - [1.13 提交前自测清单](#113-提交前自测清单)
+- [2. 核心代码结构](#2-核心代码结构)
+- [3. 统一返回格式与认证](#3-统一返回格式与认证)
+- [4. API 清单](#4-api-清单)
+- [5. 创建问卷示例](#5-创建问卷示例)
+- [6. 单题答题示例](#6-单题答题示例)
+- [7. MongoDB 设计要点](#7-mongodb-设计要点)
+- [8. 前端页面与当前阶段说明](#8-前端页面与当前阶段说明)
+- [9. 版本升级指引](#9-版本升级指引)
+
 ## 1. 运行指引（环境与启动）
 
 本节是从零把项目跑起来的完整步骤，按顺序照做即可。下文用 `<项目目录>` 指代克隆或解压后的项目根目录（即包含 `pom.xml` 的那一层），命令都在该目录下执行；启动成功后访问 `http://localhost:8081`。
@@ -108,7 +160,7 @@ MONGODB_URI="mongodb://survey_app:survey_app_pwd@localhost:27017/survey_db?authS
 |---|---|---|---|
 | `server.port` | `SERVER_PORT` | `8081` | HTTP 端口。**注意**：Spring Boot 宽松绑定会让 `SERVER_PORT` 覆盖 `server.port`，若终端里存在该变量需显式指定 |
 | `spring.data.mongodb.uri` | `MONGODB_URI` | `mongodb://localhost:27017/survey_db?maxPoolSize=50` | 数据库连接串。默认连接本机未启用认证的库；数据库启用认证时用环境变量传入带账号的串，此时 `authSource` 不能漏 |
-| `spring.data.mongodb.auto-index-creation` | —（可用 Spring Boot 宽松绑定 `SPRING_DATA_MONGODB_AUTOINDEXCREATION` 覆盖） | `true` | 启动时按 `MongoIndexConfig` 创建 6 个索引。设为 `false` 后不再自动创建，需手工建索引，否则部分唯一索引缺失、防重复注册与防重复答卷失去数据库兜底 |
+| `spring.data.mongodb.auto-index-creation` | —（可用 Spring Boot 宽松绑定 `SPRING_DATA_MONGODB_AUTOINDEXCREATION` 覆盖） | `true` | 启动时按 `MongoIndexConfig` 创建 15 个索引。设为 `false` 后不再自动创建，需手工建索引，否则部分唯一索引缺失、防重复注册与防重复答卷失去数据库兜底 |
 | `app.cors.allowed-origins` | `SURVEY_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | 跨域来源，逗号分隔。内置前端与后端同源，默认值不影响本地使用 |
 | `app.security.token-secret` | `SURVEY_TOKEN_SECRET` | 演示值 | JWT 签名密钥，**部署前必须替换** |
 | `app.security.hmac-secret` | `SURVEY_HMAC_SECRET` | 演示值 | 匿名答卷 HMAC 密钥，**部署前必须替换** |
@@ -140,7 +192,7 @@ app.security.hmac-secret 仍在使用 application.yml 中的演示密钥……
 ### 1.7 打开页面并走一遍完整流程（5 步，约 2 分钟）
 
 1. 浏览器打开 `http://localhost:8081`，出现登录页。
-2. 点「注册」，用户名至少 3 位、密码至少 8 位（例如 `demo001` / `password123`），注册成功后自动进入「我的问卷」。
+2. 点「注册」，用户名至少 3 位、密码 8–16 位（例如 `demo001` / `password123`），注册成功后自动进入「我的问卷」。
 3. 点「创建问卷」，填标题，添加两道题（例如一道单选、一道多选），保存草稿。
 4. 回到「我的问卷」，点「发布」，复制生成的分享链接（形如 `http://localhost:8081/survey/abc123`）。
 5. 新开一个浏览器窗口打开分享链接，登录后逐题作答，交卷；回到「统计」页查看结果。
@@ -168,17 +220,26 @@ jar 方式同样可以用 `MONGODB_URI` 覆盖连接串，写法与 1.3 节一�
 
 ```bash
 ./mvnw test                                        # 全部测试
-./mvnw test -Dtest=SurveyFlowIntegrationTest       # 只跑接口集成测试
+./mvnw test -Dtest=RequiredAcceptanceTest          # 只跑六类必测项（第二阶段）
+./mvnw test -Dtest=SurveyFlowIntegrationTest       # 只跑第一阶段功能用例
 ```
 
 期望结果：
 
 ```
-com.example.surveysystem.SurveyFlowIntegrationTest: tests=12 errors=0 skipped=0 failures=0
+com.example.surveysystem.RequiredAcceptanceTest:      tests=6  errors=0 skipped=0 failures=0
+com.example.surveysystem.SurveyFlowIntegrationTest:   tests=12 errors=0 skipped=0 failures=0
 com.example.surveysystem.SurveySystemApplicationTests: tests=1 errors=0 skipped=0 failures=0
 ```
 
-耗时约 11 秒。共 12 个集成用例、101 个测试步骤（注册登录与数据隔离 / 多题型建卷 / 发布前校验 / 逐题校验 / 条件跳转 / 提交与统计 / 匿名与多次填写 / 协议层错误码 / 生命周期与截止时间 / 登录限流 / 会话归属与恢复 / 统计分母受跳转影响）。测试自建 `itest_` 前缀的账号与问卷，结束后自动清理，不影响已有数据。全部通过后即可认定「代码可运行」。
+耗时约 15 秒。两个测试类的分工：
+
+| 测试类 | 组织方式 | 用例数 | 步骤数 | 数据前缀 |
+|---|---|---|---|---|
+| `RequiredAcceptanceTest` | 按课程「六、测试要求」的六类必测项组织：创建问卷 / 添加题目 / 跳转逻辑 / 校验 / 提交问卷 / 统计 | 6 | 222 | `acc_` |
+| `SurveyFlowIntegrationTest` | 按第一阶段功能模块组织 | 12 | 101 | `itest_` |
+
+两个类都自建独立账号与问卷，结束后按用户名前缀清理数据（第二阶段用例同时清理 `questions` / `question_versions` / `question_shares`），不影响已有数据。全部通过后即可认定「代码可运行」。
 
 ### 1.10 可选：应用数据库层校验器（需要 dbAdmin 权限）
 
@@ -225,25 +286,31 @@ curl -s http://localhost:8081/api/surveys/mine -H "Authorization: Bearer <TOKEN>
 
 - [ ] 按 1.3 节（无认证数据库）能启动成功
 - [ ] 按 1.4 节（带账号数据库）能启动成功
-- [ ] `mvnw.cmd test` 12 + 1 个测试全部通过
-- [ ] 页面 5 个视图（登录注册、我的问卷、创建问卷、填写、统计）都能打开
+- [ ] `mvnw.cmd test` 6 + 12 + 1 个测试全部通过（六类必测项 + 第一阶段功能 + 上下文加载）
+- [ ] 页面 7 个视图（登录注册、我的问卷、题库、题目详情、创建/编辑问卷、填写、统计）都能打开
+- [ ] 题库页能新建题目、修改题目生成新版本、看版本历史与 diff、看引用列表与跨问卷统计
+- [ ] 问卷编辑页能「从题库选题」，并能在题库出新版本后手动换绑
 - [ ] 分享链接 `/survey/{publicId}` 能 302 跳转到填写页
 - [ ] 关闭窗口后重新启动，数据仍在（说明真的写进了 MongoDB）
 
 ## 2. 核心代码结构
 
-- `domain`：`User`、`Survey`、`Response` 三种 MongoDB 文档。
-- `dto`：11 个 DTO（`UpdateDeadlineRequest` 用于单独修改截止时间）；答题题目视图作为 `StartResponseResult` 的内嵌类，避免将跳转规则暴露给前端。
-- `repository`：三个 MongoRepository 数据访问接口。
-- `service`：`UserService`、`SurveyService`、`AnswerEngineService`、`StatsService`。
-- `controller`：注册登录、问卷管理、答题和统计的四组 REST 接口。
+后端 Java 源码 71 个文件 / 5150 行。一阶段 45 个文件 / 2312 行，二阶段新增 26 个文件 / 2838 行，**没有删除任何一个一阶段类或方法**。
+
+- `domain`：6 种 MongoDB 文档。第一阶段三种（`User`、`Survey`、`Response`）；第二阶段新增三种（`LibraryQuestion` 题目身份、`QuestionVersion` 不可变版本、`QuestionShare` 共享授权）。
+- `dto`：22 个传输对象。一阶段 11 个；二阶段新增 11 个（`ConstraintsInput`、`OptionInput`、`QuestionContentRequest`、`ShareQuestionRequest`、`LibraryQuestionSummary`、`LibraryQuestionDetail`、`QuestionVersionView`、`QuestionVersionDiff`、`QuestionShareView`、`QuestionUsageView`、`CrossSurveyQuestionStats`）。答题题目视图仍作为 `StartResponseResult` 的内嵌类，避免将跳转规则暴露给前端。
+- `repository`：6 个 `MongoRepository` 接口。一阶段 3 个；二阶段新增 `LibraryQuestionRepository`、`QuestionVersionRepository`、`QuestionShareRepository`。
+- `service`：12 个类 = 8 个业务服务 + 4 个协作类。
+  - 业务服务：`UserService`、`SurveyService`、`AnswerEngineService`、`StatsService`（一阶段）；`QuestionLibraryService`、`QuestionAccessService`、`QuestionShareService`、`CrossSurveyStatsService`（二阶段）。
+  - 协作类：`LoginAttemptGuard`（登录限流）、`QuestionContentValidator`（引用与快照比对）、`QuestionContentMapper`（三种形态间转换）、`QuestionVersionComparator`（版本差异计算）。它们无状态或纯计算，不放进业务服务以避免职责混杂与循环依赖。
+- `controller`：5 组 REST 接口——`AuthController`（注册登录）、`SurveyController`（问卷管理 + SQ-01/SQ-02）、`ResponseController`（答题）、`StatsController`（整卷/单题统计）、`QuestionController`（题库，二阶段新增，15 个接口）。
 - `utils`：`JwtUtil`、`IdGenerator`、`HashUtils`。
 - `exception`：统一业务异常及返回处理。
-- `config`：`CorsConfig`（仅跨域）、`AuthInterceptor` + `WebMvcConfig`（JWT 认证拦截及放行规则）、`SecurityConfig`（`BCryptPasswordEncoder` Bean + 启动密钥检查）、`MongoIndexConfig`（唯一索引及查询索引）。
-- `db`：数据库侧脚本与文档——`schema.md`（集合结构、索引、设计说明）、`init-db.js`（初始化数据库账号）、`apply-validators.js`（集合级 JSON Schema 校验器）、`migrate-number-types.js`（历史数值类型迁移）。
-- `docs`：提交用文档——`系统文档.md`（系统说明、数据库设计、API 说明、关键逻辑说明）、`测试用例.md`（12 个用例，含步骤/输入/输出/结果）、`项目完成报告.md`（项目目标、系统设计、AI 使用过程、测试结果、问题与解决）、`images/`（报告插图）。
-- `tools`：`package_submission.py`，按提交结构生成 zip 提交包。
-- `README.md`：第 1 节即运行指引（环境检查、两种启动方式、常见问题、提交前自测清单），第 2 至 8 节为代码结构、接口与设计说明。
+- `config`：`CorsConfig`（仅跨域）、`AuthInterceptor` + `WebMvcConfig`（JWT 认证拦截及放行规则）、`SecurityConfig`（`BCryptPasswordEncoder` Bean + 启动密钥检查）、`MongoIndexConfig`（15 条索引，定义变更时自动重建）。
+- `db`：数据库侧脚本与文档——`schema.md`（集合结构、索引、设计说明）、`init-db.js`（初始化数据库账号）、`apply-validators.js`（六个集合的 JSON Schema 校验器）、`migrate-number-types.js`（一阶段数值类型迁移）、`migrate-phase2.js`（二阶段存量数据补齐）。
+- `docs/images/`：系统文档插图（三层题目模型、共享权限矩阵、需求覆盖）。
+- `tools/`：4 个 Python 冒烟脚本，直接打 HTTP 验证题库功能（`smoke-question-library.py`、`smoke-question-share.py`、`smoke-question-usage-stats.py`、`smoke-version-diff.py`）。
+- 根目录文档：`系统文档-第二阶段.md`（本次主文档）、`系统文档.md`（一阶段，保留备查）、`测试用例.md`（二阶段必测项 6 用例 / 222 步）、`测试用例-第二轮.md`（二阶段回归 5 用例 / 111 步）、`测试用例-第一阶段.md`（一阶段 12 用例 / 101 步）、`schema.md`（与 `db/schema.md` 一致）。
 
 ## 3. 统一返回格式与认证
 
@@ -285,6 +352,31 @@ Authorization: Bearer <token>
 | GET | `/api/surveys/{surveyId}/stats` | 问卷创建者查看整卷统计 |
 | GET | `/api/surveys/{surveyId}/stats/{questionId}` | 问卷创建者查看单道题的统计 |
 | GET | `/survey/{publicId}` | 公开短链接，302 重定向到前端填写页 |
+| POST | `/api/questions` | 在题库新建题目，自动生成 v1 |
+| GET | `/api/questions` | 我的题库列表，支持 `status=active\|archived\|all` 与 `keyword` |
+| GET | `/api/questions/{questionId}` | 题目详情，含版本数与被引用次数 |
+| PUT | `/api/questions/{questionId}` | 修改题目：追加一个新版本，旧版本保留 |
+| DELETE | `/api/questions/{questionId}` | 归档题目（不物理删除） |
+| GET | `/api/questions/{questionId}/versions` | 版本历史，最新在前 |
+| GET | `/api/questions/{questionId}/versions/{versionNo}` | 指定版本内容 |
+| GET | `/api/questions/{questionId}/versions/{from}/compare/{to}` | 对比两个版本的差异 |
+| POST | `/api/questions/{questionId}/versions/{versionNo}/restore` | 以旧版本内容追加一个新版本 |
+| POST | `/api/surveys/{surveyId}/questions/{questionId}/promote` | 把问卷里的本地题目存入题库 |
+| PUT | `/api/surveys/{surveyId}/questions/{questionId}/version` | 手动把题目换绑到题库的另一个版本（仅草稿） |
+| POST | `/api/questions/{questionId}/shares` | 把题目共享给指定用户，`permission` 为 `use` 或 `edit` |
+| GET | `/api/questions/{questionId}/shares` | 我共享出去的授权记录 |
+| DELETE | `/api/questions/{questionId}/shares/{granteeId}` | 撤销对某个用户的授权 |
+| GET | `/api/questions/shared-with-me` | 别人共享给我的题目 |
+| GET | `/api/questions/{questionId}/usages` | 这道题被哪些问卷使用（仅创建者） |
+| GET | `/api/questions/{questionId}/stats` | 跨问卷单题统计（仅创建者，只返回聚合结果） |
+
+上表前 16 项为第一阶段已有，后 17 项为第二阶段新增。题库接口全部挂在 `/api/questions` 下，因此与其它 `/api/**` 接口一样受 `AuthInterceptor` 保护。
+
+**共享权限模型**：`use` 能读取题目、把任意版本选进自己的问卷；`edit` 在其基础上可以创建新版本。两者都**不能**转授给第三人、不能归档、不能查看使用情况与跨问卷统计——这三项是创建者独有。撤销授权不影响对方已有问卷里的题目快照（快照本来就独立于题库）。
+
+`GET /api/questions/{questionId}` 会返回 `accessLevel` 字段（`owner` / `edit` / `use`），是页面裁剪按钮的唯一依据。之所以由服务端给结论：前端只知道用户名、拿不到自己的用户 ID，也没有共享记录的读取权，让页面比对 `ownerId` 等于把授权规则复制出第二份实现。
+
+**版本升级策略**：问卷绑定题库版本后**不会自动跟随**。`GET /api/surveys/{surveyId}` 会为每个题库题目回填 `latestVersionNo` 与 `newerVersionAvailable` 两个字段（不落库，每次读取时现算），前端据此提示「该题已有新版本」。是否换绑由用户通过 `PUT /api/surveys/{surveyId}/questions/{questionId}/version` 显式决定，且只有草稿可以换绑——已发布问卷换绑会让同一份问卷的新旧答卷基于不同版本的选项，统计时无法区分。
 
 ### 4.1 错误码约定
 
@@ -403,7 +495,8 @@ Authorization: Bearer <token>
 ## 7. MongoDB 设计要点
 
 - `users`：用户名唯一索引，密码为 BCrypt 哈希。
-- `surveys`：题目、选项、约束和跳转规则内嵌；`publicId` 通过部分唯一索引保证只对已设置字符串值的文档唯一。
+- `surveys`：题目以「题库引用 + 内容快照 + 问卷内跳转规则」的形式内嵌；`publicId` 通过部分唯一索引保证只对已设置字符串值的文档唯一。
+- `questions` / `question_versions` / `question_shares`：题库题目身份、不可变版本、共享授权。题目内容只在版本集合里保存一份，问卷侧保存引用与快照，因此题库改题不会影响已发布的问卷。
 - `responses`：答案内嵌；匿名响应通过 `@Field(write = NON_NULL)` 不落库 `userId` 字段，只保存 `respondentKeyHash`；`(surveyId, submissionKey)` 对字符串值建立部分唯一索引，防止 `allowMultiple=false` 时并发重复创建。
 - 匿名答卷不保存 `userId`，保存 `HMAC-SHA256(surveyId:userId)`；服务端通过重算 HMAC 校验答题会话归属。由于该值是确定性 HMAC，它仍可用于同一问卷内的同人匹配，因此并不等同于“无法关联的匿名数据”。
 - 提交答案时通过 `{_id, status, currentQuestionId}` 条件更新，保证同一题不会因并发请求被重复写入。
@@ -419,8 +512,26 @@ Authorization: Bearer <token>
 | `responses` | `uniq_survey_submission_key` | `surveyId: 1, submissionKey: 1` | 唯一 + 部分 | `allowMultiple=false` 时防并发重复答卷 |
 | `responses` | `idx_survey_status` | `surveyId: 1, status: 1` | 普通 | 统计只取 `submitted` 答卷 |
 | `responses` | `idx_survey_answer_question` | `surveyId: 1, answers.questionId: 1` | **多键** | 支撑统计管道 `$unwind answers` 后按题过滤 |
+| `surveys` | `idx_survey_question_ref` | `questions.questionId: 1` | **多键** | 「某道题被哪些问卷使用」的反向查询 |
+| `responses` | `idx_answer_version_status` | `answers.questionVersionId: 1, status: 1` | **多键** | 跨问卷单题统计，按版本聚合 |
+| `questions` | `idx_question_owner_updated` | `ownerId: 1, updatedAt: -1` | 普通 | 我的题库按最近修改倒序 |
+| `questions` | `idx_question_owner_status` | `ownerId: 1, status: 1, updatedAt: -1` | 普通 | 按状态过滤后仍能直接用索引顺序，不内存排序 |
+| `questions` | `uniq_question_source` | `ownerId: 1, sourceSurveyId: 1, sourceQuestionInstanceId: 1` | 唯一 + 部分（仅字符串） | 「从问卷加入题库」幂等，同一道问卷题不重复沉淀 |
+| `question_versions` | `uniq_question_version_no` | `questionId: 1, versionNo: 1` | 唯一 | 同一道题的版本号不重复，并发改题由数据库兜底 |
+| `question_shares` | `uniq_question_grantee` | `questionId: 1, granteeId: 1` | 唯一 | 同一人同一题只保留一条授权 |
+| `question_shares` | `idx_grantee_created_at` | `granteeId: 1, createdAt: -1` | 普通 | 「别人共享给我的题目」按授权时间倒序 |
+| `question_shares` | `idx_question_share_created` | `questionId: 1, createdAt: -1` | 普通 | 「我共享出去的授权记录」按授权时间倒序 |
 
-索引由 `MongoIndexConfig` 在启动时创建（`readWrite` 权限即可）。最后一条是多键索引：`answers` 是数组，MongoDB 会为数组中每个 `questionId` 建立索引项，使「某问卷某道题」的聚合只扫描相关数组元素，而不是全集合扫描。
+索引由 `MongoIndexConfig` 在启动时创建（`readWrite` 权限即可），共 15 个：第一阶段 6 个、第二阶段新增 9 个。其中三条是多键索引：`answers` 与 `questions` 是数组，MongoDB 会为数组中每个元素建立索引项，使「某问卷某道题」「某个版本的所有答案」「某道题被哪些问卷使用」这类聚合只扫描相关数组元素，而不是全集合扫描。`uniq_question_source` 用部分索引（只索引 `sourceSurveyId` 为字符串的文档）的原因是在题库里直接创建的题目没有来源，若建成普通唯一索引，第二条「直接创建」的题目会因 `null` 重复而插入失败。
+
+**索引定义变更会自动重建**。直接调 `createIndex` 时，如果同名索引已存在但键不同，MongoDB 会抛 `IndexKeySpecsConflict`（错误码 86）导致**应用启动失败**；而且只在「跑过旧版本的库」上失败，新装的库一切正常，问题会拖到部署时才暴露。因此 `MongoIndexConfig.ensureIndex` 会先比对同名索引的键，不一致时 `dropIndex` 后重建，并在日志里打印变更前后：
+
+```
+WARN  c.e.s.config.MongoIndexConfig : 索引 idx_question_owner_status 的定义已变更，删除后重建：
+      {"ownerId": 1, "status": 1} -> {"ownerId": 1, "status": 1, "updatedAt": -1}
+```
+
+只比较键、不比较 `unique` 等选项：选项变更会抛另一种错误（`IndexOptionsConflict`），属于需要人工确认的结构调整，自动重建反而有风险。
 
 ### 7.2 集合级校验器（JSON Schema）
 
@@ -441,11 +552,32 @@ db.grantRolesToUser("survey_app", [{ role: "dbAdmin", db: "survey_db" }])
 
 ### 7.3 数据迁移脚本
 
-`db/migrate-number-types.js` 修正早期版本遗留的类型问题：早期用 `BigDecimal` 承载数值，在本环境下被序列化成字符串，导致聚合 `$avg` 失效。脚本把 `responses.answers[].numberValue`、`surveys.questions[].constraints.minValue/maxValue` 中的字符串转成原生 `double`，幂等且失败时保留原值。
+两个脚本，各自对应一次具体的结构变更，都保留、都不改写。合并成一个会让「从一阶段升到二阶段」和「从更早版本升到二阶段」两条路径共用一段无法同时满足的逻辑。
+
+**`db/migrate-number-types.js`（一阶段）**：修正早期版本遗留的类型问题。早期用 `BigDecimal` 承载数值，在本环境下被序列化成字符串，导致聚合 `$avg` 失效。脚本把 `responses.answers[].numberValue`、`surveys.questions[].constraints.minValue/maxValue` 中的字符串转成原生 `double`，幂等且失败时保留原值。
 
 ```bash
 mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-number-types.js
 ```
+
+**`db/migrate-phase2.js`（二阶段）**：把一阶段存量数据补齐到题库结构。
+
+```bash
+# 预演
+DRY_RUN=1 mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+# 执行
+mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+```
+
+不迁移其实也不会立刻报错（应用侧判空全是 null 安全），但有三处会真实出问题：
+
+1. `surveys.questions[].sourceType` 在校验器里是枚举 `local|library`，显式写 `null` 会被拒，而字段缺失时枚举校验不生效——同一批数据「有时合法有时不合法」。
+2. `responses.answers[]` 缺题库字段时，跨问卷统计必须写成「字段不存在 **或** 为 `null`」两种分支才不漏数据。
+3. 三个新集合在纯一阶段库里不存在，直接跑 `apply-validators.js` 会在 `collMod` 阶段报 `ns does not exist`。
+
+**关键实现细节**：三个缺口过滤器必须用 `$elemMatch`，不能写成 `{"answers.libraryQuestionId": {$exists:false}}`。数组路径上的 `$exists:false` 语义是「没有任何一个元素含该字段」，会漏掉「部分元素缺字段」的文档，并把 `answers: []` 误判为缺口（每次迁移都报缺口，永远补不完）。实测改为 `$elemMatch` 后第二次执行 `matched=0`，幂等成立。
+
+**刻意不做**：不把存量问卷里的题目自动导入题库。自动导入会替用户决定「哪些题值得进题库」，还会让后续手动导入撞上 `uniq_question_source` 唯一索引。题库从空开始是符合预期的状态。
 
 ### 7.4 安全加固
 
@@ -456,25 +588,132 @@ mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=
 
 ## 8. 前端页面与当前阶段说明
 
-`src/main/resources/static/` 下提供了一套无构建步骤的原生 HTML/CSS/JS 前端（多巴胺配色 + neo-brutalism 风格），启动后直接访问 `http://localhost:8081` 即可使用：
+`src/main/resources/static/` 下提供了一套无构建步骤的原生 HTML/CSS/JS 前端（多巴胺配色 + neo-brutalism 风格），启动后直接访问 `http://localhost:8081` 即可使用，共 7 个视图：
 
-- 登录 / 注册页
-- 我的问卷：发布、修改截止时间、关闭、删除草稿、分享链接（一键复制）
-- 创建问卷：4 种题型、选项、选择数量/长度/数值约束、跳转规则可视化配置
-- 填写问卷：逐题作答、按规则自动跳转、校验失败即时提示
-- 统计页：支持「整卷统计」与「按单题查看」两种视图
+| 视图 | 路由 | 说明 |
+|---|---|---|
+| 登录 / 注册 | `#/login` | 登录后按 hash 参数回到原目标页 |
+| 我的问卷 | `#/surveys` | 发布、改截止时间、关闭、删除草稿、复制分享链接；**有新版本的题目会打标** |
+| 题库 | `#/library` | 我的题库 / 共享给我的；按状态与关键词筛选；新建、归档 |
+| 题目详情 | `#/library/{id}` | 四个页签：版本历史（含版本 diff）、被哪些问卷使用、跨问卷统计、共享授权；后三个只对所有者显示 |
+| 创建 / 编辑问卷 | `#/edit/{id}` | 4 种题型、选项、约束、跳转规则；**从题库选题**（引用即只读） |
+| 填写问卷 | `#/fill/{publicId}` | 逐题作答、按规则跳转、校验失败即时提示 |
+| 统计 | `#/stats/{id}` | 「整卷统计」与「按单题查看」两种视图 |
 
-分享链接形如 `http://localhost:8081/survey/{publicId}`，由 `ResponseController` 302 重定向到 `index.html#/fill/{publicId}`。按需求约定，填写者需要先登录；从分享链接进入时，登录成功后会自动回到该填写页。
+分享链接形如 `http://localhost:8081/survey/{publicId}`，由 `ResponseController` 302 重定向到 `index.html#/fill/{publicId}`。填写者需先登录；从分享链接进入时，登录成功后自动回到该填写页。
 
-已实现自动化集成测试 `src/test/java/com/example/surveysystem/SurveyFlowIntegrationTest.java`（`@SpringBootTest` + 随机端口 + 真实 MongoDB），覆盖需求要求的创建问卷、添加题目、跳转逻辑、校验、提交问卷、统计六类用例：
+前端与后端的三处耦合点（页面依赖、但接口测试不会覆盖的字段）：
+
+- `accessLevel`：题目详情与问卷详情返回，取值 `owner`/`edit`/`use`，页面据此裁剪「修改」「归档」「共享」按钮。**不由前端比对 `ownerId`**——JWT 只带用户名不带用户 ID，前端也没有共享记录的读取权。
+- `sourceType`：`local`/`library`。页面据此把引用题渲染成只读卡片，不显示编辑控件。
+- `newerVersionAvailable`：题库出了新版本后由服务端回填，页面显示「有新版本」提示与「换绑」按钮。系统**不自动升级**。
+
+### 自动化测试
+
+三套测试全部为 `@SpringBootTest` + 随机端口 + 真实 MongoDB，共 23 个业务用例 / 434 个步骤（另有 1 个 Spring 上下文加载测试）：
 
 ```bash
-mvnw test -Dtest=SurveyFlowIntegrationTest
+mvnw test                                        # 全部
+mvnw test -Dtest=RequiredAcceptanceTest           # 课程必测六类，6 用例 222 步
+mvnw test -Dtest=Phase2RegressionTest             # 二阶段回归，5 用例 111 步
+mvnw test -Dtest=SurveyFlowIntegrationTest        # 一阶段功能，12 用例 101 步
 ```
 
-测试用例自建独立用户与问卷，并在结束时按用户名前缀清理数据，不影响已有数据。
+| 测试类 | 覆盖内容 |
+|---|---|
+| `RequiredAcceptanceTest` | 创建问卷、添加题目、跳转逻辑、校验、提交问卷、统计（一个必测项一个用例） |
+| `Phase2RegressionTest` | 历史数据兼容、权限矩阵、版本隔离与换绑、引用只读与归档、前端契约 |
+| `SurveyFlowIntegrationTest` | 一阶段 12 个功能模块 |
 
-当前仍未包含的扩展功能：邮件找回密码、管理员角色、导出报表（CSV/Excel）、答卷明细列表、令牌撤销与刷新令牌。
+三个测试类都自建独立用户与问卷，结束时按用户名前缀清理数据（第二阶段用例同时清理 `questions` / `question_versions` / `question_shares`），不影响已有数据。步骤与预期输出见 `测试用例.md`、`测试用例-第二轮.md`、`测试用例-第一阶段.md`。
+
+另有 4 个 Python 冒烟脚本（`tools/`），直接打 HTTP 验证题库功能，不依赖 JUnit：
+
+```bash
+python tools/smoke-question-library.py
+python tools/smoke-question-share.py
+python tools/smoke-question-usage-stats.py
+python tools/smoke-version-diff.py
+```
+
+### 历史数据迁移
+
+一阶段数据升级到二阶段需要执行一次迁移脚本（幂等，可重复执行；支持 `DRY_RUN=1` 预演，执行前自动备份到 `db_backup_<时间戳>`）：
+
+```bash
+# 预演：只统计要改什么，不写库
+DRY_RUN=1 mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+
+# 正式执行
+mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+```
+
+脚本做三件事：创建 `questions` / `question_versions` / `question_shares` 三个集合；为 `surveys.questions[]` 补 `sourceType="local"`、`required`、`options`；为 `responses.answers[]` 补 `libraryQuestionId`/`questionVersionId = null`。**不把存量问卷里的题目自动导入题库**——导入是用户的显式动作（`POST /api/surveys/{id}/questions/{qid}/promote`）。
+
+### 当前仍未包含的扩展功能
+
+邮件找回密码、管理员角色、答卷导出（CSV/Excel）、答卷明细列表、令牌撤销与刷新令牌、题目版本的物理删除、已发布问卷的换绑、题库全文检索、共享授权的有效期与审批流。理由见 `系统文档-第二阶段.md` 1.12。
+
+## 9. 版本升级指引
+
+本节把「从 v1.0 升到 v2.0」要做的动作按顺序列全。全新的空库直接跳到 §1.2，不需要本节。
+
+### 9.1 升级前
+
+| 检查项 | 命令 / 动作 | 期望 |
+|---|---|---|
+| 现有集合 | `mongosh ... --eval "db.getCollectionNames()"` | 至少含 `users` / `surveys` / `responses` |
+| 数据量 | `db.surveys.countDocuments()` / `db.responses.countDocuments()` | 记下来，升级后应完全一致 |
+| 备份 | 迁移脚本会自动备份到 `db_backup_<时间戳>`；也可手工 `mongodump` | 备份存在且可读 |
+| 代码版本 | `git log --oneline -1` | 一阶段最后一次提交（用于回滚） |
+
+### 9.2 三条命令
+
+```bash
+# ① 预演：只统计要改什么，不写库
+DRY_RUN=1 mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+
+# ② 正式执行（自动备份）
+mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+
+# ③ 幂等验证：再跑一次应为 matched=0、零改动
+mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=survey_db" db/migrate-phase2.js
+```
+
+### 9.3 升级后验证
+
+| 验证项 | 方式 | 期望 |
+|---|---|---|
+| 集合齐全 | `db.getCollectionNames()` | 6 个 |
+| 索引齐全 | `db.questions.getIndexes()` 等 | 共 15 条 |
+| 数据未丢 | `db.surveys.countDocuments()` | 与升级前一致 |
+| 旧问卷可打开 | 登录后打开任一 v1.0 问卷 | 题目正常显示，可编辑草稿 |
+| 旧答卷可统计 | 打开对应问卷统计页 | 数值与升级前一致 |
+| 新功能可用 | 题库页新建一道题 | 生成 v1，可改出 v2 |
+| 回归测试 | `mvnw test` | 24/24 通过 |
+
+### 9.4 回滚
+
+迁移脚本不删文档、不改业务取值，只补字段与建集合，因此有两条回滚路径：
+
+1. **从备份还原**（彻底）：`mongorestore` 从 `db_backup_<时间戳>` 恢复 6 个集合。
+2. **不还原**（够用）：直接跑 v1.0 代码。v1.0 的实体类不声明新增字段，Jackson 默认忽略未知字段，因此新字段不会导致反序列化失败。
+
+### 9.5 文档版本对照
+
+各文档共享同一套版本号，v2.0 的内容互相引用，改一处需要同步：
+
+| 文档 | 版本 | 内容 | 与本文档的关系 |
+|---|---|---|---|
+| `README.md` | v2.0 | 环境、启动、接口清单、设计要点、升级指引 | 本文档 |
+| `系统文档-第二阶段.md` | v2.0 | 系统说明、数据库设计、API、关键逻辑 | 设计的完整论证；本文档只给结论 |
+| `schema.md` / `db/schema.md` | v2.0 | 集合字段级明细、索引、校验器、版本演进 | 字段的权威来源；两份内容必须一致 |
+| `测试用例.md` | v2.0 | 课程六类必测项 6 用例 / 222 步 | 测试的详细步骤 |
+| `测试用例-第二轮.md` | v2.0 | 二阶段回归 5 用例 / 111 步 | 二阶段特有风险的回归 |
+| `测试用例-第一阶段.md` | v1.0 | 一阶段 12 用例 / 101 步 | 原样保留，作为回归基线 |
+| `系统文档.md` | v1.0 | 一阶段完整文档 | 原样保留，备查 |
+
+版本号规则：**主版本号跟阶段走**（v1.0 = 第一阶段，v2.0 = 第二阶段），小版本号留给同一阶段内的文档修订（如 v2.1 修错别字）。不因为「内容改得多」而跳主版本号——主版本号只表示对应的系统阶段。
 
 ## 排查 `PasswordEncoder` / `BCryptPasswordEncoder` 无法解析
 

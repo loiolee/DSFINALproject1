@@ -3,3 +3,7 @@ target/
 *.iml
 .env
 .DS_Store
+
+# 完成报告（本地交付物，不入库）
+第二阶段完成报告.pdf
+第二阶段完成报告.html

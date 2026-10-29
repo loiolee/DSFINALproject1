@@ -6,9 +6,9 @@ import com.example.surveysystem.dto.SurveyStatsResponse;
 import com.example.surveysystem.exception.BusinessException;
 import com.example.surveysystem.repository.ResponseRepository;
 import com.example.surveysystem.repository.SurveyRepository;
+import com.example.surveysystem.utils.AggregationUtils;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
-import org.bson.types.Decimal128;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -113,7 +113,7 @@ public class StatsService {
                 group("answers.questionId").count().as("answeredCount")
         );
         Document row = mongoTemplate.aggregate(aggregation, "responses", Document.class).getUniqueMappedResult();
-        return row == null ? 0L : numberAsLong(row.get("answeredCount"));
+        return row == null ? 0L : AggregationUtils.asLong(row.get("answeredCount"));
     }
 
     /** 多选题展开 answers.optionIds 后按选项 ID 分组，每次选择计一次。 */
@@ -128,7 +128,7 @@ public class StatsService {
         Map<String, Long> counts = new HashMap<>();
         for (Document row : mongoTemplate.aggregate(aggregation, "responses", Document.class).getMappedResults()) {
             Object optionId = row.get("_id");
-            if (optionId != null) counts.put(optionId.toString(), numberAsLong(row.get("count")));
+            if (optionId != null) counts.put(optionId.toString(), AggregationUtils.asLong(row.get("count")));
         }
         return counts;
     }
@@ -143,11 +143,8 @@ public class StatsService {
         );
         Document row = mongoTemplate.aggregate(aggregation, "responses", Document.class).getUniqueMappedResult();
         if (row == null) return Optional.empty();
-        Object average = row.get("average");
-        // BigDecimal 在 MongoDB 中可能以 Decimal128 返回。
-        if (average instanceof Number value) return Optional.of(value.doubleValue());
-        if (average instanceof Decimal128 decimal128) return Optional.of(decimal128.bigDecimalValue().doubleValue());
-        return Optional.empty();
+        // 类型归一化（Integer / Long / Double / Decimal128）统一交给 AggregationUtils。
+        return Optional.ofNullable(AggregationUtils.asDouble(row.get("average")));
     }
 
     /** 文本回答明细，最多返回 {@value #MAX_TEXT_ANSWERS} 条，防止答卷很多时响应体无限膨胀。 */
@@ -176,10 +173,7 @@ public class StatsService {
                 count().as("total")
         );
         Document row = mongoTemplate.aggregate(aggregation, "responses", Document.class).getUniqueMappedResult();
-        return row == null ? 0L : numberAsLong(row.get("total"));
+        return row == null ? 0L : AggregationUtils.asLong(row.get("total"));
     }
 
-    private long numberAsLong(Object value) {
-        return value instanceof Number number ? number.longValue() : 0L;
-    }
 }

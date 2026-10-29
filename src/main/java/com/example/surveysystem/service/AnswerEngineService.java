@@ -285,6 +285,11 @@ public class AnswerEngineService {
         }
         return Response.Answer.builder()
                 .questionId(question.getId())
+                // 题库归属与版本在答题时一并落库：跨问卷统计需要按题目身份归并，
+                // 单题统计需要按版本区分口径（v1 与 v2 的选项可能不同）。
+                // 本地题目这两个字段为 null，历史答卷同样为 null，聚合时自然被排除。
+                .libraryQuestionId(question.getQuestionId())
+                .questionVersionId(question.getQuestionVersionId())
                 .type(question.getType())
                 .optionIds(optionIds)
                 .textValue(textValue)
