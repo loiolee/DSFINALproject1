@@ -15,7 +15,7 @@ Spring Boot + MongoDB 的在线问卷系统（后端 + 内置前端页面），�
 | 版本 | 日期 | 主要变更 |
 |---|---|---|
 | v1.0 | 2026-10-22 | 初版。3 个集合、16 个接口、29 条功能、5 个页面；一阶段集成测试 12 用例 |
-| v2.0 | 2026-10-29 | 新增题库（3 个集合、17 个接口、8 条需求）；前端扩到 7 个视图；新增二阶段回归测试 5 用例；新增迁移脚本 `migrate-phase2.js`；§1~§8 全量核对更新，新增 §9 版本升级指引 |
+| v2.0 | 2026-10-29 | 新增题库（3 个集合、17 个接口、8 条需求）；前端扩到 7 个视图；二阶段测试扩到 12 用例（必测项 6 + 风险回归 6）；新增迁移脚本 `migrate-phase2.js`；§1~§8 全量核对更新，新增 §9 版本升级指引 |
 
 **v2.0 变更摘要（相对 v1.0）**
 
@@ -221,6 +221,7 @@ jar 方式同样可以用 `MONGODB_URI` 覆盖连接串，写法与 1.3 节一�
 ```bash
 ./mvnw test                                        # 全部测试
 ./mvnw test -Dtest=RequiredAcceptanceTest          # 只跑六类必测项（第二阶段）
+./mvnw test -Dtest=Phase2RegressionTest            # 只跑风险回归用例（第二阶段）
 ./mvnw test -Dtest=SurveyFlowIntegrationTest       # 只跑第一阶段功能用例
 ```
 
@@ -228,18 +229,20 @@ jar 方式同样可以用 `MONGODB_URI` 覆盖连接串，写法与 1.3 节一�
 
 ```
 com.example.surveysystem.RequiredAcceptanceTest:      tests=6  errors=0 skipped=0 failures=0
+com.example.surveysystem.Phase2RegressionTest:        tests=6  errors=0 skipped=0 failures=0
 com.example.surveysystem.SurveyFlowIntegrationTest:   tests=12 errors=0 skipped=0 failures=0
 com.example.surveysystem.SurveySystemApplicationTests: tests=1 errors=0 skipped=0 failures=0
 ```
 
-耗时约 15 秒。两个测试类的分工：
+耗时约 15 秒。三个测试类的分工：
 
 | 测试类 | 组织方式 | 用例数 | 步骤数 | 数据前缀 |
 |---|---|---|---|---|
 | `RequiredAcceptanceTest` | 按课程「六、测试要求」的六类必测项组织：创建问卷 / 添加题目 / 跳转逻辑 / 校验 / 提交问卷 / 统计 | 6 | 222 | `acc_` |
+| `Phase2RegressionTest` | 按风险角度组织：历史数据兼容 / 权限矩阵 / 版本隔离与换绑 / 引用只读与归档 / 前端契约 / 本地题目存入题库 | 6 | 124 | `reg_` |
 | `SurveyFlowIntegrationTest` | 按第一阶段功能模块组织 | 12 | 101 | `itest_` |
 
-两个类都自建独立账号与问卷，结束后按用户名前缀清理数据（第二阶段用例同时清理 `questions` / `question_versions` / `question_shares`），不影响已有数据。全部通过后即可认定「代码可运行」。
+三个类都自建独立账号与问卷，结束后按用户名前缀清理数据（第二阶段用例同时清理 `questions` / `question_versions` / `question_shares`），不影响已有数据。全部通过后即可认定「代码可运行」。
 
 ### 1.10 可选：应用数据库层校验器（需要 dbAdmin 权限）
 
@@ -310,7 +313,7 @@ curl -s http://localhost:8081/api/surveys/mine -H "Authorization: Bearer <TOKEN>
 - `db`：数据库侧脚本与文档——`schema.md`（集合结构、索引、设计说明）、`init-db.js`（初始化数据库账号）、`apply-validators.js`（六个集合的 JSON Schema 校验器）、`migrate-number-types.js`（一阶段数值类型迁移）、`migrate-phase2.js`（二阶段存量数据补齐）。
 - `docs/images/`：系统文档插图（三层题目模型、共享权限矩阵、需求覆盖）。
 - `tools/`：4 个 Python 冒烟脚本，直接打 HTTP 验证题库功能（`smoke-question-library.py`、`smoke-question-share.py`、`smoke-question-usage-stats.py`、`smoke-version-diff.py`）。
-- 根目录文档：`系统文档-第二阶段.md`（本次主文档）、`系统文档.md`（一阶段，保留备查）、`测试用例.md`（二阶段必测项 6 用例 / 222 步）、`测试用例-第二阶段.md`（二阶段回归 5 用例 / 111 步）、`测试用例-第一阶段.md`（一阶段 12 用例 / 101 步）、`schema.md`（与 `db/schema.md` 一致）。
+- 根目录文档：`系统文档-第二阶段.md`（本次主文档）、`系统文档.md`（一阶段，保留备查）、`测试用例-第二阶段.md`（二阶段 12 用例 / 346 步，必测项与风险回归合并为一份）、`测试用例-第一阶段.md`（一阶段 12 用例 / 101 步）、`schema.md`（与 `db/schema.md` 一致）。
 
 ## 3. 统一返回格式与认证
 
@@ -610,22 +613,22 @@ mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=
 
 ### 自动化测试
 
-三套测试全部为 `@SpringBootTest` + 随机端口 + 真实 MongoDB，共 23 个业务用例 / 434 个步骤（另有 1 个 Spring 上下文加载测试）：
+三套测试全部为 `@SpringBootTest` + 随机端口 + 真实 MongoDB，共 24 个业务用例 / 447 个步骤（另有 1 个 Spring 上下文加载测试）：
 
 ```bash
 mvnw test                                        # 全部
 mvnw test -Dtest=RequiredAcceptanceTest           # 课程必测六类，6 用例 222 步
-mvnw test -Dtest=Phase2RegressionTest             # 二阶段回归，5 用例 111 步
+mvnw test -Dtest=Phase2RegressionTest             # 二阶段风险回归，6 用例 124 步
 mvnw test -Dtest=SurveyFlowIntegrationTest        # 一阶段功能，12 用例 101 步
 ```
 
 | 测试类 | 覆盖内容 |
 |---|---|
 | `RequiredAcceptanceTest` | 创建问卷、添加题目、跳转逻辑、校验、提交问卷、统计（一个必测项一个用例） |
-| `Phase2RegressionTest` | 历史数据兼容、权限矩阵、版本隔离与换绑、引用只读与归档、前端契约 |
+| `Phase2RegressionTest` | 历史数据兼容、权限矩阵、版本隔离与换绑、引用只读与归档、前端契约、本地题目存入题库 |
 | `SurveyFlowIntegrationTest` | 一阶段 12 个功能模块 |
 
-三个测试类都自建独立用户与问卷，结束时按用户名前缀清理数据（第二阶段用例同时清理 `questions` / `question_versions` / `question_shares`），不影响已有数据。步骤与预期输出见 `测试用例.md`、`测试用例-第二阶段.md`、`测试用例-第一阶段.md`。
+三个测试类都自建独立用户与问卷，结束时按用户名前缀清理数据（第二阶段用例同时清理 `questions` / `question_versions` / `question_shares`），不影响已有数据。步骤与预期输出见 `测试用例-第二阶段.md`、`测试用例-第一阶段.md`。
 
 另有 4 个 Python 冒烟脚本（`tools/`），直接打 HTTP 验证题库功能，不依赖 JUnit：
 
@@ -690,7 +693,7 @@ mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=
 | 旧问卷可打开 | 登录后打开任一 v1.0 问卷 | 题目正常显示，可编辑草稿 |
 | 旧答卷可统计 | 打开对应问卷统计页 | 数值与升级前一致 |
 | 新功能可用 | 题库页新建一道题 | 生成 v1，可改出 v2 |
-| 回归测试 | `mvnw test` | 24/24 通过 |
+| 回归测试 | `mvnw test` | 25/25 通过 |
 
 ### 9.4 回滚
 
@@ -708,8 +711,7 @@ mongosh "mongodb://<应用账号>:<密码>@localhost:27017/survey_db?authSource=
 | `README.md` | v2.0 | 环境、启动、接口清单、设计要点、升级指引 | 本文档 |
 | `系统文档-第二阶段.md` | v2.0 | 系统说明、数据库设计、API、关键逻辑 | 设计的完整论证；本文档只给结论 |
 | `schema.md` / `db/schema.md` | v2.0 | 集合字段级明细、索引、校验器、版本演进 | 字段的权威来源；两份内容必须一致 |
-| `测试用例.md` | v2.0 | 课程六类必测项 6 用例 / 222 步 | 测试的详细步骤 |
-| `测试用例-第二阶段.md` | v2.0 | 二阶段回归 5 用例 / 111 步 | 二阶段特有风险的回归 |
+| `测试用例-第二阶段.md` | v2.0 | 二阶段 12 用例 / 346 步（必测项 6 + 风险回归 6） | 测试的详细步骤；八条新需求与边界风险的主要证据 |
 | `测试用例-第一阶段.md` | v1.0 | 一阶段 12 用例 / 101 步 | 原样保留，作为回归基线 |
 | `系统文档.md` | v1.0 | 一阶段完整文档 | 原样保留，备查 |
 
